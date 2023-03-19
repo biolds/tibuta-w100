@@ -103,7 +103,37 @@ xrandr --output HDMI-1 --off
 Scrolling with 2 fingers requires using `xdotool` and some  custom configuration, as described on <https://wiki.archlinux.org/title/Touchegg> and setting the [thresholds parameters](https://github.com/JoseExposito/touchegg#daemon-configuration) in systemd's configuration. This gave some results with:
 
 ```
-ExecStart=/usr/bin/touchegg --daemon 10 15
+ExecStart=/usr/bin/touchegg --daemon 5 15
+```
+
+`~/.config/touchegg/touchegg.conf`
+```
+<touchégg>
+  <settings>
+    <property name="animation_delay">150</property>
+    <property name="action_execute_threshold">20</property>
+    <property name="color">auto</property>
+    <property name="borderColor">auto</property>
+  </settings>
+
+  <application name="All">
+   <gesture type="SWIPE" fingers="2" direction="DOWN">
+     <action type="RUN_COMMAND">
+       <repeat>true</repeat>
+       <command>xdotool click 4</command>
+       <decreaseCommand>xdotool click 5</decreaseCommand>
+       <times>5</times>
+     </action>
+   </gesture>
+   <gesture type="SWIPE" fingers="2" direction="UP">
+     <action type="RUN_COMMAND">
+       <repeat>true</repeat>
+       <command>xdotool click 5</command>
+       <decreaseCommand>xdotool click 4</decreaseCommand>
+       <times>5</times>
+     </action>
+   </gesture>
+</touchégg>
 ```
 
 _Note: this conflicts with Chromium built-in's multi-touch scrolling / zooming_
