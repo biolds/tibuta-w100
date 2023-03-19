@@ -164,7 +164,7 @@ MAX="$(cat $SYSFS_BL/max_brightness)"
 CURRENT="$(cat $SYSFS_BL/brightness)"
 
 STEP="$(($MAX * $PERCENT / 100))"
-NEW="$((CURRENT - STEP))"
+NEW="$(($CURRENT - $STEP))"
 
 if [ "$NEW" -lt 0 ]
 then
@@ -185,7 +185,7 @@ MAX="$(cat $SYSFS_BL/max_brightness)"
 CURRENT="$(cat $SYSFS_BL/brightness)"
 
 STEP="$(($MAX * $PERCENT / 100))"
-NEW="$((CURRENT + STEP))"
+NEW="$(($CURRENT + $STEP))"
 
 if [ "$NEW" -gt "$MAX" ]
 then
