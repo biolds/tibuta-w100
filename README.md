@@ -10,7 +10,6 @@ It aims to cover system setup and [IceWM](https://ice-wm.org/) lightweight windo
 - Screen sometime blinking in console mode
 - Accelerometers (automatically switch between landscape and portrait modes)
 - Suspend on lid close
-- Bluetooth (not tested)
 
 Feel free to post a pull request to improve this doc or open a discussion.
 
@@ -185,7 +184,7 @@ Set `HandlePowerKey=suspend` in `/etc/systemd/login.conf`
 
 # Bluetooth
 
-Works out of the box, see <https://wiki.debian.org/BluetoothUser>.
+Works out of the box (tested as a network adapter), see <https://wiki.debian.org/BluetoothUser>.
 
 # Debian packages
 
