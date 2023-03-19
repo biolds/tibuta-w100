@@ -1,6 +1,7 @@
 This project contains notes about setting up Debian Buster on the Tibuta MasterPad W100 tablet (<https://www.amazon.com/Tibuta-Masterpad-Computer-1536%C3%972048-Keyboard/dp/B09LS6Y2KT>).
+It is highly recomended to backup the Windows partition, or make a dual boot when installing Linux.
 
-It covers mainly the touchscreen setup and [IceWM](https://ice-wm.org/) lightweight window manager setup. Not yet working:
+It aims to cover system setup and [IceWM](https://ice-wm.org/) lightweight window manager setup. Not yet working:
 
 - Sound card
 - Backlight control (works on Ubunbtu)
@@ -10,10 +11,9 @@ It covers mainly the touchscreen setup and [IceWM](https://ice-wm.org/) lightwei
 - Screen sometime blinking in console mode
 - Accelerometers (automatically switch between landscape and portrait modes)
 - Suspend on lid close
-- HDMI output (not tested)
 - Bluetooth (not tested)
 
-Feel free to post a pull request to improve this doc or open discussions.
+Feel free to post a pull request to improve this doc or open a discussion.
 
 # Touchscreen
 
@@ -78,6 +78,26 @@ fi
 
 _Note: the matrix coordinates are usable as is but could be improved, please make a PR if you fine-tune them_
 
+# HDMI output
+
+HDMI output works (the sound output does not), the following script will setup HDMI output while keeping the tablet screen in landscape scaled mode, but this breaks the touchscreen scaling done above (I did not bother building the correct xinput commands, since a mouse is required anyway to access the external screen):
+
+`/usr/local/bin/screen-hdmi`
+```sh
+#!/bin/bash
+xrandr --output HDMI-1 --off # Reset the output in case it's in a bad state
+xrandr --output eDP-1 --scale 1x1 --auto
+xrandr --output HDMI-1 --auto --mode 1920x1080
+xrandr --output HDMI-1 --auto --right-of eDP-1
+xrandr --output eDP-1 --mode 1536x2048 -o left --scale 0.5x0.5
+```
+
+`/usr/local/bin/screen-hdmi-off`
+```
+#!/bin/bash
+xrandr --output HDMI-1 --off
+```
+
 # Touchscreen gestures
 
 [Touchegg](https://github.com/JoseExposito/touchegg) can be installed to handle right-click with 2 fingers.
@@ -104,10 +124,12 @@ On IceWM, `touchegg-client` needs to be run at startup, in `.icewm/startup` with
 
 Set `HandlePowerKey=suspend` in `/etc/systemd/login.conf`
 
+# Bluetooth
+
+Works out of the box, see <https://wiki.debian.org/BluetoothUser>.
+
 # Debian packages
 
-Lightweight tools
-
 ```
-apt install lightdm icewm libpugixml1v5 xinput xdotool firefox-esr pcmanfm onboard sakura papirus-icon-theme
+apt install lightdm icewm libpugixml1v5 xinput xdotool firefox-esr pcmanfm onboard sakura papirus-icon-theme bluetooth rfkill blueman
 ```
