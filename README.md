@@ -4,7 +4,6 @@ It is highly recomended to backup the Windows partition, or make a dual boot whe
 It aims to cover system setup and [IceWM](https://ice-wm.org/) lightweight window manager setup. Not yet working:
 
 - Sound card
-- Backlight control (works on Ubunbtu)
 - Volume button
 - Wifi
 - Display power management bug (sometime after going into power saving mode, the screen won't light back)
@@ -120,6 +119,66 @@ On IceWM, `touchegg-client` needs to be run at startup, in `.icewm/startup` with
 - conf to have [Onboard](https://launchpad.net/onboard) in the accesibility menu: [lightdm-gtk-greeter.conf](/uploads/Home/lightdm-gtk-greeter.conf)
 (to be put in `/etc/lightdm`)
 
+
+# Backlight
+
+The backlight can be changed through `/sys/class/backlight/intel_backlight`, and can be updated with keyboard shortcuts using `xbindkeys`:
+
+`/usr/local/bin/backlight-dec`
+```sh
+#!/bin/bash
+set -e
+
+PERCENT=10
+SYSFS_BL=/sys/class/backlight/intel_backlight
+MAX="$(cat $SYSFS_BL/max_brightness)"
+CURRENT="$(cat $SYSFS_BL/brightness)"
+
+STEP="$(($MAX * $PERCENT / 100))"
+NEW="$((CURRENT - STEP))"
+
+if [ "$NEW" -lt 0 ]
+then
+	NEW=0
+fi
+
+echo "$NEW" > $SYSFS_BL/brightness
+```
+
+`/usr/local/bin/backlight-inc`
+```sh
+#!/bin/bash
+set -e
+
+PERCENT=10
+SYSFS_BL=/sys/class/backlight/intel_backlight
+MAX="$(cat $SYSFS_BL/max_brightness)"
+CURRENT="$(cat $SYSFS_BL/brightness)"
+
+STEP="$(($MAX * $PERCENT / 100))"
+NEW="$((CURRENT + STEP))"
+
+if [ "$NEW" -gt "$MAX" ]
+then
+	NEW="$MAX"
+fi
+
+echo "$NEW" > $SYSFS_BL/brightness
+```
+
+`~/.xbindkeysrc`
+```
+# Increase backlight
+"/usr/local/bin/backlight-inc"
+   XF86MonBrightnessUp
+
+# Decrease backlight
+"/usr/local/bin/backlight-dec"
+   XF86MonBrightnessDown
+```
+
+`xbindkeys` then needs to be started from `~/.icewm/startup`
+
 # Suspend on power button
 
 Set `HandlePowerKey=suspend` in `/etc/systemd/login.conf`
@@ -131,5 +190,6 @@ Works out of the box, see <https://wiki.debian.org/BluetoothUser>.
 # Debian packages
 
 ```
-apt install lightdm icewm libpugixml1v5 xinput xdotool firefox-esr pcmanfm onboard sakura papirus-icon-theme bluetooth rfkill blueman
+apt install lightdm icewm libpugixml1v5 xinput xdotool xbindkeys \
+	firefox-esr pcmanfm onboard sakura papirus-icon-theme bluetooth rfkill blueman
 ```
