@@ -1,27 +1,27 @@
-This project contains notes about setting up Debian Buster on the Tibuta MasterPad W100 tablet (<https://www.amazon.com/Tibuta-Masterpad-Computer-1536%C3%972048-Keyboard/dp/B09LS6Y2KT>).
+This project contains notes about setting up Debian Bullseye on the Tibuta MasterPad W100 tablet (<https://www.amazon.com/Tibuta-Masterpad-Computer-1536%C3%972048-Keyboard/dp/B09LS6Y2KT>).
 It is highly recomended to backup the Windows partition, or make a dual boot when installing Linux.
 
 It aims to cover system setup and [IceWM](https://ice-wm.org/) lightweight window manager setup. Not yet working:
 
-- Sound card
-- Volume button
 - Wifi
+- Volume buttons
 - Display power management bug (sometime after going into power saving mode, the screen won't light back)
 - Screen sometime blinking in console mode
 - Accelerometers (automatically switch between landscape and portrait modes)
 - Suspend on lid close
+- Cameras image is upside down
 
-Feel free to post a pull request to improve this doc or open a discussion.
+Feel free to post a pull request to improve this doc or open a discussion. Please put a star if it was useful to you.
 
 # Touchscreen
 
-Using the touchscreen requires rebuilding the kernel to enable custom settings, and update the `silead` module. The updated kernel can be downloaded from this repository: [linux-image-5.10.162+_5.10.162+-1_amd64.deb](/uploads/Home/linux-image-5.10.162+_5.10.162+-1_amd64.deb)
+Using the touchscreen requires rebuilding the kernel to enable custom settings, and update the `silead` module. The updated kernel can be downloaded from this repository (it's built on top on the [6.1 kernel backport](https://packages.debian.org/bullseye-backports/kernel/linux-image-6.1.0-0.deb11.5-amd64-unsigned), which is required for the sound card module): [linux-image-6.1.12+_6.1.12+-1_amd64.deb](/uploads/Home/linux-image-6.1.12+_6.1.12+-1_amd64.deb)
 
 The [firmware](/uploads/Home/gsl1680-tibuta-w100.fw) needs to be copied manually into `/lib/firmware/silead/`.
 
 ```sh
 export PATH=/sbin:/usr/sbin:$PATH
-dpkg -i linux-image-5.10.158+_5.10.158+-1_amd64.deb
+dpkg -i linux-image-6.1.12+_6.1.12+-1_amd64.deb
 cp gsl1680-tibuta-w100.fw /lib/firmware/silead/
 update-grub
 ```
@@ -33,11 +33,11 @@ The kernel can also be built manually, based on [gls-firmware Github page](https
 A [patch](/uploads/Home/0001-tibuta-touchpad-module.patch) is required to load the new firmware, updated debian kernel conf and cert, etc.
 
 ```sh
-apt-get install build-essential linux-source bc kmod cpio flex libncurses5-dev libelf-dev libssl-dev dwarves bison python3
+apt-get install build-essential linux-source-6.1 bc kmod cpio flex libncurses5-dev libelf-dev libssl-dev dwarves bison python3
 cd /root
-tar xaf /usr/src/linux-source-5.10.tar.xz
-cd linux-source-5.10
-patch --dry-run < 0001-tibuta-touchpad-module.patch # try with -p1 or -p0 in case of error, then remove dry-run
+tar xaf /usr/src/linux-source-6.1.tar.xz
+cd linux-source-6.1
+patch < 0001-tibuta-touchpad-module.patch
 make -j2 deb-pkg
 ```
 
@@ -74,11 +74,11 @@ else
 fi
 ```
 
-_Note: the matrix coordinates are usable as is but could be improved, please make a PR if you fine-tune them_
+_Note: the matrix coordinates are usable as is but could be improved, please make a PR if you fine-tune them._
 
 # HDMI output
 
-HDMI output works (the sound output does not), the following script will setup HDMI output while keeping the tablet screen in landscape scaled mode, but this breaks the touchscreen scaling done above (I did not bother building the correct xinput commands, since a mouse is required anyway to access the external screen):
+The following script will setup HDMI output while keeping the tablet screen in landscape scaled mode, but this breaks the touchscreen scaling done above (I did not bother building the correct xinput commands, since a mouse is required anyway to access the external screen):
 
 `/usr/local/bin/screen-hdmi`
 ```sh
@@ -98,45 +98,7 @@ xrandr --output HDMI-1 --off
 
 # Touchscreen gestures
 
-[Touchegg](https://github.com/JoseExposito/touchegg) can be installed to handle right-click with 2 fingers.
-
-Scrolling with 2 fingers requires using `xdotool` and some  custom configuration, as described on <https://wiki.archlinux.org/title/Touchegg> and setting the [thresholds parameters](https://github.com/JoseExposito/touchegg#daemon-configuration) in systemd's configuration. This gave some results with:
-
-```
-ExecStart=/usr/bin/touchegg --daemon 5 15
-```
-
-`~/.config/touchegg/touchegg.conf`
-```
-<touchégg>
-  <settings>
-    <property name="animation_delay">150</property>
-    <property name="action_execute_threshold">20</property>
-    <property name="color">auto</property>
-    <property name="borderColor">auto</property>
-  </settings>
-
-  <application name="All">
-   <gesture type="SWIPE" fingers="2" direction="DOWN">
-     <action type="RUN_COMMAND">
-       <repeat>true</repeat>
-       <command>xdotool click 4</command>
-       <decreaseCommand>xdotool click 5</decreaseCommand>
-       <times>5</times>
-     </action>
-   </gesture>
-   <gesture type="SWIPE" fingers="2" direction="UP">
-     <action type="RUN_COMMAND">
-       <repeat>true</repeat>
-       <command>xdotool click 5</command>
-       <decreaseCommand>xdotool click 4</decreaseCommand>
-       <times>5</times>
-     </action>
-   </gesture>
-</touchégg>
-```
-
-_Note: this conflicts with Chromium built-in's multi-touch scrolling / zooming_
+[Touchegg](https://github.com/JoseExposito/touchegg) can be installed to handle right-click/scroll with 2 fingers. (seems like it's also required for the touchpad)
 
 On IceWM, `touchegg-client` needs to be run at startup, in `.icewm/startup` with `/usr/bin/touchegg --client &`.
 
@@ -148,10 +110,9 @@ On IceWM, `touchegg-client` needs to be run at startup, in `.icewm/startup` with
 - conf to have [Onboard](https://launchpad.net/onboard) in the accesibility menu: [lightdm-gtk-greeter.conf](/uploads/Home/lightdm-gtk-greeter.conf)
 (to be put in `/etc/lightdm`)
 
-
 # Backlight
 
-The backlight can be changed through `/sys/class/backlight/intel_backlight`, and can be updated with keyboard shortcuts using `xbindkeys`:
+The backlight can be changed through `/sys/class/backlight/intel_backlight`:
 
 `/usr/local/bin/backlight-dec`
 ```sh
@@ -191,9 +152,24 @@ if [ "$NEW" -gt "$MAX" ]
 then
 	NEW="$MAX"
 fi
-
+i
 echo "$NEW" > $SYSFS_BL/brightness
 ```
+
+# Suspend on power button
+
+Set `HandlePowerKey=suspend` in `/etc/systemd/login.conf`
+
+# Soundcard
+
+The ES8336 chipset for sound requires at least a 6.0 kernel and installing the firmwares provided by the [SOF project](https://www.sofproject.org/), by following the [Readme](https://github.com/thesofproject/sof-bin).
+
+When it's installed, run `alsamixer`, hit F6 and select "sof-essx8336".
+Unmute all chanels and increase their volume, only one chanel `DAC Mono` needs to be kept muted to enable stereo sound.
+
+# Shortcut keys
+
+Shortcut keys can be setup with `xbindkeys`:
 
 `~/.xbindkeysrc`
 ```
@@ -204,21 +180,52 @@ echo "$NEW" > $SYSFS_BL/brightness
 # Decrease backlight
 "/usr/local/bin/backlight-dec"
    XF86MonBrightnessDown
+
+# Increase volume
+"pactl set-sink-volume @DEFAULT_SINK@ +1000"
+   XF86AudioRaiseVolume
+
+# Decrease volume
+"pactl set-sink-volume @DEFAULT_SINK@ -1000"
+   XF86AudioLowerVolume
 ```
 
-`xbindkeys` then needs to be started from `~/.icewm/startup`
-
-# Suspend on power button
-
-Set `HandlePowerKey=suspend` in `/etc/systemd/login.conf`
+`xbindkeys` then needs to be started from `~/.icewm/startup`.
 
 # Bluetooth
 
-Works out of the box (tested as a network adapter), see <https://wiki.debian.org/BluetoothUser>.
+Works out of the box, see <https://wiki.debian.org/BluetoothUser>.
 
 # Debian packages
 
 ```
-apt install lightdm icewm libpugixml1v5 xinput xdotool xbindkeys \
-	firefox-esr pcmanfm onboard sakura papirus-icon-theme bluetooth rfkill blueman
+apt install lightdm icewm libpugixml1v5 xinput xbindkeys chromium pcmanfm onboard tilix pavucontrol firmware-linux-nonfree bluetooth rfkill blueman papirus-icon-theme adwaita-icon-theme
+```
+
+# IceWM
+
+A theme with big buttons that can be used on a touchscreen is available there: <https://www.antixforum.com/forums/topic/new-theme-for-antix-icewm/>
+
+`~/.icewm/toolbar`:
+```
+# This is a default toolbar definition file for IceWM
+#
+# Place your personal variant in $HOME/.icewm directory.
+
+prog Tilix terminal.png tilix
+prog PCManFM /usr/share/icons/Papirus/64x64/apps/fma-config-tool.svg pcmanfm
+#prog FTE fte fte
+#prog Netscape netscape netscape
+#prog    "Vim" vim /usr/bin/gvim -f
+prog    "WWW" ! x-www-browser
+prog Switch /usr/share/icons/Adwaita/64x64/actions/view-refresh-symbolic.symbolic.png /usr/local/bin/screen-switch
+```
+
+`~/.icewm/startup`
+```
+#!/bin/bash
+/usr/bin/onboard &
+/usr/bin/touchegg --client &
+/usr/bin/blueman-tray
+/usr/bin/xbindkeys
 ```
