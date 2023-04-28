@@ -1,3 +1,6 @@
+Tibuta W100 Linux Setup Notes
+=============================
+
 This project contains notes about setting up Debian Bullseye on the Tibuta MasterPad W100 tablet (<https://www.amazon.com/Tibuta-Masterpad-Computer-1536%C3%972048-Keyboard/dp/B09LS6Y2KT>).
 It is highly recomended to backup the Windows partition, or make a dual boot when installing Linux.
 
@@ -107,7 +110,7 @@ On IceWM, `touchegg-client` needs to be run at startup, in `.icewm/startup` with
 [LightDM](https://doc.ubuntu-fr.org/lightdm) setup for tablet that don't handle screen rotation:
 
 - screen scaling, and landscape mode: [lightdm.conf](/uploads/Home/lightdm.conf)
-- conf to have [Onboard](https://launchpad.net/onboard) in the accesibility menu: [lightdm-gtk-greeter.conf](/uploads/Home/lightdm-gtk-greeter.conf)
+- conf to have [Onboard](https://launchpad.net/onboard) in the accessibility menu: [lightdm-gtk-greeter.conf](/uploads/Home/lightdm-gtk-greeter.conf)
 (to be put in `/etc/lightdm`)
 
 # Backlight
@@ -229,3 +232,13 @@ prog Switch /usr/share/icons/Adwaita/64x64/actions/view-refresh-symbolic.symboli
 /usr/bin/blueman-tray
 /usr/bin/xbindkeys
 ```
+
+# Tablet panel
+
+To control the backlight and volume while the keyboard is detached, I have written a small UI tool available there: https://gitlab.com/biolds1/tabletpanel
+
+You can make it launchable when taping on the clock in the taskbar by adding this line in `~/.icewm/preferences`:
+```
+ClockCommand="/usr/bin/python3 /usr/local/bin/tabletpanel
+```
+
