@@ -155,7 +155,7 @@ if [ "$NEW" -gt "$MAX" ]
 then
 	NEW="$MAX"
 fi
-i
+
 echo "$NEW" > $SYSFS_BL/brightness
 ```
 
@@ -239,6 +239,6 @@ To control the backlight and volume while the keyboard is detached, I have writt
 
 You can make it launchable when taping on the clock in the taskbar by adding this line in `~/.icewm/preferences`:
 ```
-ClockCommand="/usr/bin/python3 /usr/local/bin/tabletpanel
+ClockCommand="/usr/bin/python3 /usr/local/bin/tabletpanel"
 ```
 
