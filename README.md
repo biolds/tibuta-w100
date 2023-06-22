@@ -1,7 +1,7 @@
 Tibuta W100 Linux Setup Notes
 =============================
 
-This project contains notes about setting up Debian Bullseye on the Tibuta MasterPad W100 tablet (<https://www.amazon.com/Tibuta-Masterpad-Computer-1536%C3%972048-Keyboard/dp/B09LS6Y2KT>).
+This project contains notes about setting up Debian Bookworm on the Tibuta MasterPad W100 tablet (<https://www.amazon.com/Tibuta-Masterpad-Computer-1536%C3%972048-Keyboard/dp/B09LS6Y2KT>).
 It is highly recomended to backup the Windows partition, or make a dual boot when installing Linux.
 
 It aims to cover system setup and [IceWM](https://ice-wm.org/) lightweight window manager setup. Not yet working:
@@ -24,9 +24,9 @@ The [firmware](/uploads/Home/gsl1680-tibuta-w100.fw) needs to be copied manually
 
 ```sh
 export PATH=/sbin:/usr/sbin:$PATH
-dpkg -i linux-image-6.1.12+_6.1.12+-1_amd64.deb
+mkdir /lib/firmware/silead/
 cp gsl1680-tibuta-w100.fw /lib/firmware/silead/
-update-grub
+dpkg -i linux-image-6.1.12+_6.1.12+-1_amd64.deb
 ```
 
 ## Kernel building
@@ -159,6 +159,15 @@ fi
 echo "$NEW" > $SYSFS_BL/brightness
 ```
 
+Create a udev rule to make the backlight device modifiable by regular users:
+
+`/etc/udev/rules.d/backlight.rules`
+```
+ACTION=="add", SUBSYSTEM=="backlight", RUN+="/bin/chgrp video $sys$devpath/brightness", RUN+="/bin/chmod g+w $sys$devpath/brightness"
+```
+
+And make sure regular users are part of the `video` group.
+
 # Suspend on power button
 
 Set `HandlePowerKey=suspend` in `/etc/systemd/login.conf`
@@ -202,7 +211,7 @@ Works out of the box, see <https://wiki.debian.org/BluetoothUser>.
 # Debian packages
 
 ```
-apt install lightdm icewm libpugixml1v5 xinput xbindkeys chromium pcmanfm onboard tilix pavucontrol firmware-linux-nonfree bluetooth rfkill blueman papirus-icon-theme adwaita-icon-theme
+apt install lightdm icewm xinput xbindkeys chromium pcmanfm onboard tilix pavucontrol firmware-linux-nonfree bluetooth rfkill blueman papirus-icon-theme adwaita-icon-theme
 ```
 
 # IceWM
