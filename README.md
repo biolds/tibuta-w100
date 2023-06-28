@@ -238,7 +238,7 @@ prog Switch /usr/share/icons/Adwaita/64x64/actions/view-refresh-symbolic.symboli
 #!/bin/bash
 /usr/bin/onboard &
 /usr/bin/touchegg --client &
-/usr/bin/blueman-tray
+/usr/bin/blueman-applet
 /usr/bin/xbindkeys
 ```
 
