@@ -6,7 +6,6 @@ It is highly recomended to backup the Windows partition, or make a dual boot whe
 
 It aims to cover system setup and [IceWM](https://ice-wm.org/) lightweight window manager setup. Not yet working:
 
-- Wifi
 - Volume buttons
 - Display power management bug (sometime after going into power saving mode, the screen won't light back)
 - Screen sometime blinking in console mode
@@ -15,6 +14,13 @@ It aims to cover system setup and [IceWM](https://ice-wm.org/) lightweight windo
 - Cameras image is upside down
 
 Feel free to post a pull request to improve this doc or open a discussion. Please put a star if it was useful to you.
+
+# Wifi
+By default it is not possible to power on the Wifi SoC, there seem to be some problem with the default power management config. Setting `pcie_port_pm=off` kernel parameter solves it.
+
+1. Open `/etc/default/grub` in a text editor (with root access right), and add `pcie_port_pm=off` to the end of `GRUB_CMDLINE_LINUX_DEFAULT` variable.
+2. Run `sudo grub-update` to save the new settings.
+3. Reboot.
 
 # Touchscreen
 
