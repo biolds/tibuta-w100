@@ -16,9 +16,9 @@ It aims to cover system setup and [IceWM](https://ice-wm.org/) lightweight windo
 Feel free to post a pull request to improve this doc or open a discussion. Please put a star if it was useful to you.
 
 # Wifi
-By default it is not possible to power on the Wifi SoC, there seem to be some problem with the default power management config. Setting `pcie_port_pm=off` kernel parameter solves it.
+By default it is not possible to power on the Wifi SoC, there seems to be some problem with the default power management config. Setting `pcie_port_pm=off` kernel parameter solves it.
 
-1. Open `/etc/default/grub` in a text editor (with root access right), and add `pcie_port_pm=off` to the end of `GRUB_CMDLINE_LINUX_DEFAULT` variable.
+1. Open `/etc/default/grub` in a text editor (with root access rights), and add `pcie_port_pm=off` to the end of `GRUB_CMDLINE_LINUX_DEFAULT` variable.
 2. Run `sudo grub-update` to save the new settings.
 3. Reboot.
 
@@ -257,3 +257,43 @@ You can make it launchable when taping on the clock in the taskbar by adding thi
 ClockCommand="/usr/bin/python3 /usr/local/bin/tabletpanel"
 ```
 
+# Mainline Kernel >= 5.19
+Many distributions ship with a kernel that have PCI E820 reservations disabled by default for models that were manufactured in, or after 2023.
+
+When such a kernel is installed, the system fails to boot, and emits the following message quite a few times:
+
+```
+[$TIMESTAMP] mmc0: Reset 0x1 never completed.
+[$TIMESTAMP] mmc0: sdhci: ========== SDHCI REGISTER DUMP ==========
+[$TIMESTAMP] mmc0: sdhci: Sys addr:  0xffffffff | Version:  0x0000ffff
+[$TIMESTAMP] mmc0: sdhci: Blk size:  0x0000ffff | Blk cnt:  0x0000ffff
+[$TIMESTAMP] mmc0: sdhci: Argument:  0xffffffff | Trn mode: 0x0000ffff
+[$TIMESTAMP] mmc0: sdhci: Present:   0xffffffff | Host ctl: 0x000000ff
+[$TIMESTAMP] mmc0: sdhci: Power:     0x000000ff | Blk gap:  0x000000ff
+[$TIMESTAMP] mmc0: sdhci: Wake-up:   0x000000ff | Clock:    0x0000ffff
+[$TIMESTAMP] mmc0: sdhci: Timeout:   0x000000ff | Int stat: 0xffffffff
+[$TIMESTAMP] mmc0: sdhci: Int enab:  0xffffffff | Sig enab: 0xffffffff
+[$TIMESTAMP] mmc0: sdhci: ACmd stat: 0x0000ffff | Slot int: 0x0000ffff
+[$TIMESTAMP] mmc0: sdhci: Caps:      0xffffffff | Caps_i:   0xffffffff
+[$TIMESTAMP] mmc0: sdhci: Cmd:       0x0000ffff | Max curr: 0xffffffff
+[$TIMESTAMP] mmc0: sdhci: Resp[0]:   0xffffffff | Resp[1]:  0xffffffff
+[$TIMESTAMP] mmc0: sdhci: Resp[2]:   0xffffffff | Resp[3]:  0xffffffff
+[$TIMESTAMP] mmc0: sdhci: Host ctl2: 0x0000ffff
+[$TIMESTAMP] mmc0: sdhci: ADMA Err:  0xffffffff | ADMA Ptr: 0xffffffffffffffff
+[$TIMESTAMP] mmc0: sdhci: ==========================================
+```
+
+When this happens, using `pci=use_e820` kernel parameter lets the system boot.
+
+In case there is no working kernel installed in the system, the argument can be applied in an ad-hoc way, in grub:
+
+1. On the grub screen press `e` to edit the boot command while having the default option selected.
+2. Find the line that starts with `linux`
+3. Add `pci=use_e820` to the end of the line.
+4. Press `Ctrl-X` to boot.
+
+To apply the parameter permanently, edit the grub settings:
+
+1. Open `/etc/default/grub` in a text editor (with root access rights), and add `pci=use_e820` to the end of `GRUB_CMDLINE_LINUX_DEFAULT` variable.
+2. Run `sudo grub-update` to save the new settings.
+3. Reboot.
