@@ -24,7 +24,9 @@ By default it is not possible to power on the Wifi SoC, there seems to be some p
 
 # Touchscreen
 
-Using the touchscreen requires rebuilding the kernel to enable custom settings, and update the `silead` module. The updated kernel can be downloaded from this repository (it's built on top on the [6.1 kernel backport](https://packages.debian.org/bullseye-backports/kernel/linux-image-6.1.0-0.deb11.5-amd64-unsigned), which is required for the sound card module): [linux-image-6.1.12+_6.1.12+-1_amd64.deb](/uploads/Home/linux-image-6.1.12+_6.1.12+-1_amd64.deb)
+Using the touchscreen requires rebuilding the kernel to enable custom settings, and update the `silead` module.
+
+A patched kernel based on the latest Debian kernel can be downloaded from https://gitlab.com/biolds1/tibuta-w100-kernel/-/pipelines?scope=tags&page=1 (click on the Download button, then `kernel:archive`).
 
 The [firmware](/uploads/Home/gsl1680-tibuta-w100.fw) needs to be copied manually into `/lib/firmware/silead/`.
 
@@ -32,12 +34,12 @@ The [firmware](/uploads/Home/gsl1680-tibuta-w100.fw) needs to be copied manually
 export PATH=/sbin:/usr/sbin:$PATH
 mkdir /lib/firmware/silead/
 cp gsl1680-tibuta-w100.fw /lib/firmware/silead/
-dpkg -i linux-image-6.1.12+_6.1.12+-1_amd64.deb
+dpkg -i linux-image-6.1.76-tibuta_6.1.76-tibuta-1_amd64.deb
 ```
 
 ## Kernel building
 
-The kernel can also be built manually, based on [gls-firmware Github page](https://github.com/onitake/gsl-firmware).
+Alternatively the kernel can be built manually, as described on [gls-firmware Github page](https://github.com/onitake/gsl-firmware).
 
 A [patch](/uploads/Home/0001-tibuta-touchpad-module.patch) is required to load the new firmware, updated debian kernel conf and cert, etc.
 
