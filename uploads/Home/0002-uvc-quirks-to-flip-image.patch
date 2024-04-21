@@ -1,0 +1,166 @@
+From: Gyorgy Sarvari <gyorgy.sarvari@gmail.com>
+Date: Sun, 14 Apr 2024 13:00:07 +0200
+Subject: [PATCH] uvc: add quirks to flip video image
+
+On the tablet both the front and rear camera sensors are mounted upside-down.
+Beside that, the rear camera is also vertically flipped.
+
+This patch adds 2 quirks to the uvc driver: `UVC_QUIRK_VERTICAL_FLIP` and
+`UVC_QUIRK_HORIZONTAL_FLIP` - using these quirks the driver flips the frames
+before sending them out to v4l2/userspace.
+
+This patch is a first, alpha version.
+
+--- a/drivers/media/usb/uvc/uvcvideo.h	2024-04-14 12:52:24.483001659 +0200
++++ b/drivers/media/usb/uvc/uvcvideo.h	2024-04-13 18:04:00.286169086 +0200
+@@ -211,6 +211,9 @@
+ #define UVC_QUIRK_FORCE_BPP		0x00001000
+ #define UVC_QUIRK_WAKE_AUTOSUSPEND	0x00002000
+ 
++#define UVC_QUIRK_VERTICAL_FLIP         0x40000000
++#define UVC_QUIRK_HORIZONTAL_FLIP       0x80000000
++
+ /* Format flags */
+ #define UVC_FMT_FLAG_COMPRESSED		0x00000001
+ #define UVC_FMT_FLAG_STREAM		0x00000002
+--- a/drivers/media/usb/uvc/uvc_driver.c	2024-04-13 13:05:29.000000000 +0200
++++ b/drivers/media/usb/uvc/uvc_driver.c	2024-04-20 16:13:49.116700898 +0200
+@@ -2981,6 +2981,42 @@
+ 	  .bInterfaceSubClass	= 1,
+ 	  .bInterfaceProtocol	= 0,
+ 	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
++	/* Tibuta W100 Front Camera */
++	{ .match_flags = USB_DEVICE_ID_MATCH_DEVICE
++			| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor		= 0x0c45,
++	  .idProduct		= 0x6341,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_INFO_QUIRK(UVC_QUIRK_HORIZONTAL_FLIP) },
++	/* Tibuta W100 Rear Camera */
++	{ .match_flags = USB_DEVICE_ID_MATCH_DEVICE
++			 | USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor		= 0x0a51,
++	  .idProduct		= 0x6306,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_INFO_QUIRK(UVC_QUIRK_HORIZONTAL_FLIP | UVC_QUIRK_VERTICAL_FLIP) },
++	/* Tibuta W100 Front Camera v2 */
++	{ .match_flags = USB_DEVICE_ID_MATCH_DEVICE
++			 | USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor		= 0x0c45,
++	  .idProduct		= 0x6321,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_INFO_QUIRK(UVC_QUIRK_HORIZONTAL_FLIP | UVC_QUIRK_VERTICAL_FLIP) },
++	/* Tibuta W100 Rear Camera v2 */
++	{ .match_flags = USB_DEVICE_ID_MATCH_DEVICE
++			 | USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor		= 0x0a51,
++	  .idProduct		= 0x6101,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_INFO_QUIRK(UVC_QUIRK_HORIZONTAL_FLIP | UVC_QUIRK_VERTICAL_FLIP) },
+ 	/* Generic USB Video Class */
+ 	{ USB_INTERFACE_INFO(USB_CLASS_VIDEO, 1, UVC_PC_PROTOCOL_UNDEFINED) },
+ 	{ USB_INTERFACE_INFO(USB_CLASS_VIDEO, 1, UVC_PC_PROTOCOL_15) },
+--- a/drivers/media/usb/uvc/uvc_queue.c	2024-04-13 13:05:29.000000000 +0200
++++ b/drivers/media/usb/uvc/uvc_queue.c	2024-04-21 10:36:02.139938738 +0200
+@@ -470,17 +470,93 @@
+ 	uvc_buffer_queue(&buf->buf.vb2_buf);
+ }
+ 
++static inline void uvc_video_horizontal_flip(struct uvc_streaming *stream,
++					     struct uvc_buffer **buf){
++	size_t row_count = stream->cur_frame->wHeight;
++	size_t row_sz = (*buf)->bytesused / row_count;
++	size_t end_of_buf = (*buf)->bytesused;
++	size_t row;
++	void *row_tmp, *row1, *row2;
++
++	// partial (or compressed) frame streamed, which can't be mirrored
++	// in a straightforward way
++	if ((*buf)->bytesused != (*buf)->length)
++		return;
++
++	row_tmp = kzalloc(row_sz, GFP_NOWAIT);
++
++	if (!row_tmp){
++		pr_err("Could not allocate memory for horizontal flipping!\n");
++		return;
++	}
++
++	mutex_lock(&stream->mutex);
++	for (row = 0; row <= row_count / 2; ++row){
++		row1 = (*buf)->mem + row * row_sz;
++		row2 = (*buf)->mem + end_of_buf - (row + 1) * row_sz; // mirrored row1, but from the bottom
++		memcpy(row_tmp, row1, row_sz);
++		memcpy(row1, row2, row_sz);
++		memcpy(row2, row_tmp, row_sz);
++	}
++	mutex_unlock(&stream->mutex);
++
++	kfree(row_tmp);
++}
++
++static inline void uvc_video_vertical_flip(struct uvc_streaming *stream,
++					   struct uvc_buffer **buf){
++	size_t row_count = stream->cur_frame->wHeight;
++	size_t col_count = stream->cur_frame->wWidth;
++	size_t px_sz = ((*buf)->bytesused / row_count ) / col_count;
++	size_t end_of_buf = (*buf)->bytesused;
++	size_t row, col;
++	void *px_tmp, *px1, *px2;
++
++	// partial (or compressed) frame streamed, which can't be mirrored
++	// in a straightforward way
++	if ((*buf)->bytesused != (*buf)->length)
++		return;
++
++	px_tmp = kzalloc(px_sz, GFP_NOWAIT);
++	if (!px_tmp){
++		pr_err("Could not allocate memory for vertical flipping!\n");
++		return;
++	}
++
++	mutex_lock(&stream->mutex);
++
++	for (row = 0; row < row_count; ++row){
++		for (col = 0; col < col_count / 2; ++col){
++			px1 = (*buf)->mem + (row * col_count + col) * px_sz;
++			px2 = (*buf)->mem + ((row + 1) * col_count - col - 1) * px_sz; // same as px1, but right mirrored
++			memcpy(px_tmp, px1, px_sz);
++			memcpy(px1, px2, px_sz);
++			memcpy(px2, px_tmp, px_sz);
++		}
++	}
++
++	mutex_unlock(&stream->mutex);
++
++	kfree(px_tmp);
++}
++
+ static void uvc_queue_buffer_complete(struct kref *ref)
+ {
+ 	struct uvc_buffer *buf = container_of(ref, struct uvc_buffer, ref);
+ 	struct vb2_buffer *vb = &buf->buf.vb2_buf;
+ 	struct uvc_video_queue *queue = vb2_get_drv_priv(vb->vb2_queue);
++	struct uvc_streaming *stream = uvc_queue_to_stream(queue);
+ 
+ 	if ((queue->flags & UVC_QUEUE_DROP_CORRUPTED) && buf->error) {
+ 		uvc_queue_buffer_requeue(queue, buf);
+ 		return;
+ 	}
+ 
++	if (stream->dev->quirks & UVC_QUIRK_HORIZONTAL_FLIP)
++		uvc_video_horizontal_flip(stream, &buf);
++	if (stream->dev->quirks & UVC_QUIRK_VERTICAL_FLIP)
++		uvc_video_vertical_flip(stream, &buf);
++
+ 	buf->state = buf->error ? UVC_BUF_STATE_ERROR : UVC_BUF_STATE_DONE;
+ 	vb2_set_plane_payload(&buf->buf.vb2_buf, 0, buf->bytesused);
+ 	vb2_buffer_done(&buf->buf.vb2_buf, VB2_BUF_STATE_DONE);
