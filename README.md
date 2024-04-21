@@ -11,7 +11,6 @@ It aims to cover system setup and [IceWM](https://ice-wm.org/) lightweight windo
 - Screen sometime blinking in console mode
 - Accelerometers (automatically switch between landscape and portrait modes)
 - Suspend on lid close
-- Cameras image is upside down
 
 Feel free to post a pull request to improve this doc or open a discussion. Please put a star if it was useful to you.
 
@@ -43,12 +42,15 @@ Alternatively the kernel can be built manually, as described on [gls-firmware Gi
 
 A [patch](/uploads/Home/0001-tibuta-touchpad-module.patch) is required to load the new firmware, updated debian kernel conf and cert, etc.
 
+Another [patch](/uploads/Home/0002-uvc-quirks-to-flip-image.patch) is needed to correct the orientation of the camera sensors.
+
 ```sh
 apt-get install build-essential linux-source-6.1 bc kmod cpio flex libncurses5-dev libelf-dev libssl-dev dwarves bison python3
 cd /root
 tar xaf /usr/src/linux-source-6.1.tar.xz
 cd linux-source-6.1
-patch < 0001-tibuta-touchpad-module.patch
+patch -p 1 < 0001-tibuta-touchpad-module.patch
+patch -p 1 < 0002-uvc-quirks-to-flip-image.patch
 make -j2 deb-pkg
 ```
 
@@ -299,3 +301,21 @@ To apply the parameter permanently, edit the grub settings:
 1. Open `/etc/default/grub` in a text editor (with root access rights), and add `pci=use_e820` to the end of `GRUB_CMDLINE_LINUX_DEFAULT` variable.
 2. Run `sudo grub-update` to save the new settings.
 3. Reboot.
+
+# Camera
+
+The camera sensors seem to be mounted with a random orientation. The included kernel patch introduces 2 quirks, one to horizontally flip the image, and
+one to vertically flip it. The known camera IDs are included in the patch, and the orientation should be corrected automatically.
+
+To control the flipping manually, the module can be loaded with setting the quirks manually.
+
+| Module param |  Effect |
+| ------------ | ------- |
+| `quirks=0x40000000` | Force vertical flipping |
+| `quirks=0x80000000` | Force horizontal flipping |
+| `quirks=0xc0000000` | Force vertical and horizontal flipping |
+| `quirks=0x0` | Force disable flipping |
+
+Note that the rear camera's image is not flipped in all cases.
+
+If you have a tablet with a camera that's not handled by the driver automaticaly, feel free to open an issue (or PR) to add it.
