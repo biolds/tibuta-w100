@@ -10703,7 +10703,7 @@ diff --git a/drivers/platform/x86/touchscreen_dmi.c b/drivers/platform/x86/touch
 index f00995390..d3b0f9638 100644
 --- a/drivers/platform/x86/touchscreen_dmi.c
 +++ b/drivers/platform/x86/touchscreen_dmi.c
-@@ -1010,6 +1010,25 @@ static const struct ts_dmi_data viglen_connect_10_data = {
+@@ -1010,6 +1010,26 @@ static const struct ts_dmi_data viglen_connect_10_data = {
  	.properties	= viglen_connect_10_props,
  };
  
@@ -10718,6 +10718,7 @@ index f00995390..d3b0f9638 100644
 +	PROPERTY_ENTRY_STRING("firmware-name", "gsl1680-tibuta-w100.fw"),
 +	PROPERTY_ENTRY_U32("silead,max-fingers", 10),
 +	PROPERTY_ENTRY_BOOL("silead,stuck-controller-bug"),
++	PROPERTY_ENTRY_BOOL("silead,home-button"),
 +	{ }
 +};
 +
