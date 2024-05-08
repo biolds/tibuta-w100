@@ -63,7 +63,7 @@ Using the kernel above the touchscreen does not match the screen matrix, this ca
 #!/usr/bin/bash
 xrandr --output eDP-1 --scale 1x1
 xrandr -o left
-xinput set-prop silead_ts 'Coordinate Transformation Matrix' 0 -1.17 1.17 1.32 0 -0.32 0 0 1
+xinput set-prop pointer:silead_ts 'Coordinate Transformation Matrix' 0 -1.17 1.17 1.32 0 -0.32 0 0 1
 xrandr --output eDP-1 --scale 0.5x0.5
 ```
 
@@ -72,7 +72,7 @@ xrandr --output eDP-1 --scale 0.5x0.5
 #!/usr/bin/bash
 xrandr --output eDP-1 --scale 1x1
 xrandr -o normal
-xinput set-prop silead_ts 'Coordinate Transformation Matrix' 1.32 0 -0.32 0 1.17 -0.17 0 0 1
+xinput set-prop pointer:silead_ts 'Coordinate Transformation Matrix' 1.32 0 -0.32 0 1.17 -0.17 0 0 1
 xrandr --output eDP-1 --scale 0.5x0.5
 ```
 
